@@ -4,13 +4,14 @@
 Input: Natural Earth 110m admin-0 countries GeoJSON (public domain), passed with --src.
 Projection: Natural Earth (Savric), scaled to a 1000-unit-wide canvas. Antarctica is dropped.
 Each country also gets an anchor point (centroid of its largest polygon) for flow arcs.
+Crimea is drawn as part of Ukraine (it is a separate polygon, so Ukraine's anchor does not move).
 """
 import argparse
 import json
 import math
 import pathlib
 
-from shapely.geometry import shape
+from shapely.geometry import MultiPolygon, box, mapping, shape
 from shapely.ops import unary_union  # noqa: F401  (kept for clarity of intent)
 
 WIDTH = 1000.0
@@ -25,6 +26,19 @@ def project(lon, lat):
     return x, y
 
 
+def crimea_to_ukraine(gj):
+    """Natural Earth's default outlines draw Crimea as Russian; move that polygon to Ukraine."""
+    feats = {f["properties"]["ADM0_A3"]: f for f in gj["features"]}
+    rus, ukr = shape(feats["RUS"]["geometry"]), shape(feats["UKR"]["geometry"])
+    rus_parts = list(rus.geoms) if rus.geom_type == "MultiPolygon" else [rus]
+    ukr_parts = list(ukr.geoms) if ukr.geom_type == "MultiPolygon" else [ukr]
+    window = box(32.0, 44.0, 37.0, 46.5)  # the peninsula, west of the Kerch Strait
+    crimea = [q for q in rus_parts if window.contains(q.representative_point())]
+    assert len(crimea) == 1, "expected one Crimea polygon inside the Russian outline"
+    feats["RUS"]["geometry"] = mapping(MultiPolygon([q for q in rus_parts if q is not crimea[0]]))
+    feats["UKR"]["geometry"] = mapping(MultiPolygon(ukr_parts + crimea))
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--src", required=True)
@@ -32,6 +46,7 @@ def main():
     a = ap.parse_args()
 
     gj = json.loads(pathlib.Path(a.src).read_text(encoding="utf-8"))
+    crimea_to_ukraine(gj)
     x_edge, _ = project(180, 0)
     scale = WIDTH / (2 * x_edge)
     _, y_top = project(0, 83.6)

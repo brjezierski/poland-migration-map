@@ -70,6 +70,10 @@ path.c.sel { stroke: var(--sel); stroke-width: 1.6; }
 .spark .l-in { stroke: var(--in); } .spark .l-out { stroke: var(--out); }
 .spark text { fill: var(--muted); font-size: 9px; }
 .spark .cur { stroke: var(--muted); stroke-dasharray: 2 2; }
+.spark .hov { stroke: var(--text); opacity: .45; }
+.sparkwrap { position: relative; }
+.stip { position: absolute; top: 0; pointer-events: none; background: var(--card); border: 1px solid var(--border); border-radius: 6px; padding: 3px 8px; font-size: .78rem; display: none; white-space: nowrap; box-shadow: 0 2px 8px rgba(0,0,0,.15); z-index: 2; }
+.stip b { display: block; font-variant-numeric: tabular-nums; }
 .link { background: none; border: 0; padding: 0; color: var(--muted); text-decoration: underline; font-size: .82rem; }
 .about { margin-top: 18px; display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; }
 .about section { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; font-size: .86rem; }
@@ -246,6 +250,9 @@ function shapeIds(iso, hist) {
   return iso === "DEU" ? ["FRG", "DDR"] : [iso]; // the Soviet Union, Czechoslovakia and Yugoslavia are shapes of their own
 }
 const SEL_OF = { DDR: "DEU", FRG: "DEU" };
+// states that no longer exist: the year each ended; their figures stop with the last period before 1990
+const ENDED = { SUN: 1991, CSK: 1992, YUG: 1992, DDR: 1990, FRG: 1990 };
+const MODERN = FLOWS.periods.findIndex((p) => p.start >= 1990);
 const selOf = (id) => SEL_OF[id] || id;
 [...MAP.countries, ...MAP.old].forEach((c) => {
   const p = document.createElementNS(NS, "path");
@@ -464,8 +471,9 @@ function widthKey() {
 
 // ---- panel ----
 function spark(sel) {
-  const a = agg(sel), max = Math.max(1, ...a.map((x) => Math.max(x.in, x.out)));
-  const x = (i) => 10 + (i * 260) / (N - 1), y = (v) => 62 - (v / max) * 54;
+  const M = ENDED[sel] ? MODERN : N; // a former state's graph ends where its successors begin
+  const a = agg(sel).slice(0, M), max = Math.max(1, ...a.map((x) => Math.max(x.in, x.out)));
+  const x = (i) => 10 + (i * 260) / (M - 1), y = (v) => 62 - (v / max) * 54;
   const mk = (cls, key) => {
     const l = document.createElementNS(NS, "polyline");
     l.setAttribute("class", cls); l.setAttribute("fill", "none"); l.setAttribute("stroke-width", "2");
@@ -475,12 +483,17 @@ function spark(sel) {
   const s = document.createElementNS(NS, "svg");
   s.setAttribute("viewBox", "0 0 280 80"); s.setAttribute("class", "spark");
   s.setAttribute("role", "img");
-  s.setAttribute("aria-label", `Flows between Poland and ${nameOf(sel)} in every period, peak ${fmt.format(max)}`);
-  const cur = document.createElementNS(NS, "line");
-  cur.setAttribute("class", "cur"); cur.setAttribute("x1", x(S.p)); cur.setAttribute("x2", x(S.p));
-  cur.setAttribute("y1", 4); cur.setAttribute("y2", 64);
-  s.append(cur, mk("l-in", "in"), mk("l-out", "out"));
-  [[0, "start"], [N - 1, "end"]].forEach(([i, anch]) => {
+  s.setAttribute("aria-label", `Flows between Poland and ${nameOf(sel)} in every period${M < N ? " until " + FLOWS.periods[M - 1].end : ""}, peak ${fmt.format(max)}`);
+  const line = (cls, xv) => {
+    const l = document.createElementNS(NS, "line");
+    l.setAttribute("class", cls); l.setAttribute("x1", xv); l.setAttribute("x2", xv);
+    l.setAttribute("y1", 4); l.setAttribute("y2", 64);
+    return l;
+  };
+  const hov = line("hov", 0); hov.style.display = "none";
+  if (S.p < M) s.append(line("cur", x(S.p)));
+  s.append(mk("l-in", "in"), mk("l-out", "out"), hov);
+  [[0, "start"], [M - 1, "end"]].forEach(([i, anch]) => {
     const t = document.createElementNS(NS, "text");
     t.setAttribute("x", x(i)); t.setAttribute("y", 76); t.setAttribute("text-anchor", anch);
     t.textContent = FLOWS.periods[i].start; s.append(t);
@@ -488,7 +501,23 @@ function spark(sel) {
   const mx = document.createElementNS(NS, "text");
   mx.setAttribute("x", 10); mx.setAttribute("y", 9); mx.textContent = "peak " + fmt.format(max);
   s.append(mx);
-  return s;
+  // hover: the period under the cursor with its two figures
+  const tip = h("div", { class: "stip" });
+  const at = (e) => {
+    const r = s.getBoundingClientRect();
+    const i = Math.max(0, Math.min(M - 1, Math.round(((((e.clientX - r.left) / r.width) * 280) - 10) * (M - 1) / 260)));
+    const P = FLOWS.periods[i], d = a[i];
+    tip.textContent = "";
+    tip.append(h("b", {}, `${P.start}–${P.end}`), `to Poland ${num(d.in)}`, h("br"), `from Poland ${num(d.out)}`);
+    hov.setAttribute("x1", x(i)); hov.setAttribute("x2", x(i)); hov.style.display = "";
+    tip.style.display = "block";
+    const px = (x(i) / 280) * r.width;
+    tip.style.left = Math.max(0, Math.min(r.width - tip.offsetWidth, px - tip.offsetWidth / 2)) + "px";
+  };
+  s.addEventListener("pointermove", at);
+  s.addEventListener("pointerdown", at);
+  s.addEventListener("pointerleave", () => { hov.style.display = "none"; tip.style.display = "none"; });
+  return h("div", { class: "sparkwrap" }, s, tip);
 }
 function renderPanel() {
   const P = FLOWS.periods[S.p];
@@ -502,7 +531,7 @@ function renderPanel() {
         h("div", {}, h("b", { class: "in-c" }, num(a.in)), "to Poland"),
         h("div", {}, h("b", { class: "out-c" }, num(a.out)), "from Poland"),
         h("div", {}, h("b", {}, a.in && a.out ? (a.in - a.out > 0 ? "+" : "") + fmt.format(a.in - a.out) : "–"), "net")),
-      h("div", { class: "ctx" }, `${P.start}–${P.end}. ` + (a.in || a.out ? "" : "No flow recorded for this country in this period.")),
+      h("div", { class: "ctx" }, `${P.start}–${P.end}. ` + (ENDED[S.sel] && P.start >= 1990 ? `${nameOf(S.sel)} ceased to exist in ${ENDED[S.sel]}; its successor states are listed from 1990.` : a.in || a.out ? "" : "No flow recorded for this country in this period.")),
       spark(S.sel));
     panel.append(h("button", { class: "link", type: "button", onclick: () => setSel(null) }, "Show all countries"));
     return;
