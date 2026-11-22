@@ -33,8 +33,6 @@ EUROSTAT = "https://ec.europa.eu/eurostat/databrowser/view/{}/default/table"
 LINK_RULES = [
     ("UN DESA", "https://www.un.org/development/desa/pd/content/international-migrant-stock"),
     ("migr_imm5prv", EUROSTAT.format("migr_imm5prv")),
-    ("migr_resfirst", EUROSTAT.format("migr_resfirst")),
-    ("migr_asytpsm", EUROSTAT.format("migr_asytpsm")),
     ("International Passenger Survey", "https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/internationalmigration/datasets/ipscountryofbirthbycountryoflastornextresidence"),
     ("Aussiedler", W + "Aussiedler"),
     ("Statistical Abstract of Israel", "https://www.cbs.gov.il/en/publications/Pages/2010/Statistical-Abstract-of-Israel-2010-No-61.aspx"),
@@ -113,8 +111,6 @@ UN_SRC = "UN DESA, International Migrant Stock 2024, Table 1 (stock by destinati
 ABS_SRC = "ABS, Overseas Migration 2022-23 (tables 2.1, 3.1, 1.1), financial years to 2022-23"
 ABS_METHOD = ("Overseas migrant arrivals of Poland-born people to Australia, summed over the financial years of the period. "
               "Arrivals are people who stay 12 of the next 16 months, so they include temporary migrants and returning residents, and did not necessarily come from Poland.")
-PERMIT_SRC = "Eurostat, first residence permits by citizenship (migr_resfirst, Poland), reuse with attribution"
-TP_SRC = "Eurostat, beneficiaries of temporary protection at the end of the month (migr_asytpsm, Poland)"
 
 
 def un_basis(direction, start):
@@ -446,60 +442,12 @@ def main():
             f"Source: ABS Overseas Migration 2022-23, tables 2.1, 3.1 and 1.1.")
         c["conf"] = "medium"
 
-    # first residence permits (Eurostat) per period, summed over calendar years start..end-1
-    # (the last period is 2020-2024 inclusive). Eurostat uses UK and EL for GB and GR.
-    yearly = json.loads((ROOT / "data" / "yearly.json").read_text("utf-8"))
-    a2 = {c["a2"]: c["id"] for c in countries if c.get("a2")}
-    a2.update({"UK": "GBR", "EL": "GRC"})
-    pm_unmapped = {}
-    PM_BASE = {
-        "pm": reg(PERMIT_SRC, "First residence permits issued to non-EU citizens, all validities, summed over the calendar years of the period (2020-2024 covers five years).", "low",
-                  "Permits are not arrivals: one person can receive several, permits valid under a year dominate, and refugees and EU citizens are largely missing."),
-        "pm12": reg(PERMIT_SRC, "First residence permits issued to non-EU citizens that are valid 12 months or longer, summed over the calendar years of the period (2020-2024 covers five years).", "medium"),
-    }
-    tp_base = reg(TP_SRC, "People registered under temporary protection in Poland at the end of December of the period's last year (a stock, not arrivals).", "medium")
-    for pi, p in enumerate(periods):
-        last = 2024 if pi == len(periods) - 1 else p["end"] - 1
-        yrs = [str(y) for y in range(p["start"], last + 1)]
-        if not all(y in yearly["permits"] for y in yrs):
-            continue
-        p["permits"] = True
-        for key, dur in (("pm", "TOTAL"), ("pm12", "M_GE12")):
-            for y in yrs:
-                for code, v in yearly["permits"][y][dur]["by"].items():
-                    iso = a2.get(code)
-                    if iso is None:
-                        pm_unmapped[code] = pm_unmapped.get(code, 0) + v
-                        continue
-                    c = cell(pi, iso)
-                    c[key] = c.get(key, 0) + v
-                    c["b"][key] = PM_BASE[key]
-
-    # temporary protection at the end of the period's last calendar year (2024 for the last period)
-    tp_unmapped = {}
-    for pi, p in enumerate(periods):
-        last = 2024 if pi == len(periods) - 1 else p["end"] - 1
-        entry = yearly.get("tp", {}).get(str(last))
-        if not entry:
-            continue
-        p["tp"] = last
-        for code, v in entry["by"].items():
-            iso = a2.get(code)
-            if iso is None:
-                tp_unmapped[code] = tp_unmapped.get(code, 0) + v
-                continue
-            cell(pi, iso)["tp"] = v
-            cell(pi, iso)["b"]["tp"] = tp_base
-
     flows = []
     for (pi, iso), c in sorted(cells.items()):
-        if not (c["in"] or c["out"] or c.get("pm") or c.get("pm12") or c.get("tp")):
+        if not (c["in"] or c["out"]):
             continue
         row = {"p": pi, "c": iso, "in": c["in"], "out": c["out"]}
-        for k in ("pm", "pm12", "tp"):
-            if c.get(k):
-                row[k] = c[k]
-        row["b"] = {k: i for k, i in c["b"].items() if (c["in"] if k == "in" else c["out"] if k == "out" else c.get(k))}
+        row["b"] = {k: i for k, i in c["b"].items() if (c["in"] if k == "in" else c["out"])}
         if c["conf"]:
             row["conf"] = c["conf"]
         if c["notes"]:
@@ -522,10 +470,6 @@ def main():
         top = sorted(rows, key=lambda f: -(f["in"] + f["out"]))[:3]
         print(f"  {p['start']}-{p['end']} {p['method']:7} in {tin:>9,} out {tout:>9,}  top: "
               + ", ".join(f"{t['c']}({t['in']:,}/{t['out']:,})" for t in top))
-    if tp_unmapped:
-        print("  protection citizenships with no map shape (ignored):", tp_unmapped)
-    if pm_unmapped:
-        print("  permit citizenships with no map shape (ignored):", {k: v for k, v in sorted(pm_unmapped.items(), key=lambda kv: -kv[1])[:8]})
     if unmapped:
         print("  UN countries with no map shape (ignored):", unmapped)
     if dropped:

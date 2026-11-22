@@ -29,7 +29,6 @@ button:focus-visible, select:focus-visible, input:focus-visible, svg:focus-visib
 button.primary { background: var(--accent); color: var(--bg); border-color: var(--accent); min-width: 5.5em; }
 .timeline { flex: 1 1 560px; min-width: 260px; }
 .bar label { display: flex; gap: 8px; align-items: center; }
-#measure { max-width: 420px; }
 .timeline input[type=range] { width: 100%; accent-color: var(--accent); }
 .ticks { display: flex; justify-content: space-between; font-size: .72rem; color: var(--muted); margin-top: 2px; }
 .ticks span { flex: 1; text-align: center; cursor: pointer; }
@@ -77,24 +76,7 @@ path.c.sel { stroke: var(--sel); stroke-width: 1.6; }
 .about h3 { margin: 0 0 6px; font-size: .95rem; }
 .about ul { margin: 0; padding-left: 18px; }
 .about a { color: inherit; }
-.yearly { margin-top: 18px; background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 14px; }
-.yearly h2 { margin: 0 0 4px; font-size: 1.15rem; }
 .yctl { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; margin: 10px 0; }
-.ygrid { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 16px; align-items: start; }
-.ychart { width: 100%; height: auto; display: block; }
-.ychart text { fill: var(--muted); font-size: 9px; }
-.ychart .b-tot { fill: var(--in); } .ychart .b-per { fill: var(--out); }
-.ychart .hit { fill: transparent; cursor: pointer; }
-.ychart .hit:hover { fill: color-mix(in srgb, var(--text) 8%, transparent); }
-.ychart .cur { fill: color-mix(in srgb, var(--text) 12%, transparent); }
-.ychart .brk { stroke: var(--muted); stroke-dasharray: 3 3; }
-.ykey i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin: 0 5px 0 12px; vertical-align: baseline; }
-.ykey i:first-child { margin-left: 0; }
-.ylist { list-style: none; padding: 0; margin: 4px 0 10px; font-size: .86rem; font-variant-numeric: tabular-nums; }
-.ylist li { display: flex; justify-content: space-between; border-bottom: 1px solid var(--border); padding: 3px 2px; }
-.ylist li span:last-child { color: var(--muted); }
-.yh { font-size: .9rem; margin: 10px 0 2px; font-weight: 700; }
-@media (max-width: 900px) { .ygrid { grid-template-columns: minmax(0, 1fr); } }
 .prov { margin-top: 18px; background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 14px; }
 .prov h2 { margin: 0 0 4px; font-size: 1.15rem; }
 .twrap { overflow-x: auto; margin-top: 8px; }
@@ -117,7 +99,7 @@ path.c.sel { stroke: var(--sel); stroke-width: 1.6; }
 <body>
 <div class="wrap">
   <h1>Migration to and from Poland, 1945 to 2024</h1>
-  <p class="sub">Each line links Poland to another country for a five-year period; it is drawn as a bundle of thin lines, and the more people moved the more lines it has. Teal lines run to Poland, orange lines out of it. Before 1990 the figures are rough hand-made estimates. After that, departures use official arrival counts where they exist (most of Europe, the US and Australia) and otherwise estimates from UN migrant-stock changes plus assumed deaths; the sources table below the map says which for every country. For arrivals to Poland from 2010 you can switch to Poland's own residence-permit data.</p>
+  <p class="sub">Each line links Poland to another country for a five-year period; it is drawn as a bundle of thin lines, and the more people moved the more lines it has. Teal lines run to Poland, orange lines out of it. Before 1990 the figures are rough hand-made estimates. After that, departures use official arrival counts where they exist (most of Europe, the US and Australia) and otherwise estimates from UN migrant-stock changes plus assumed deaths; the sources table below the map says which for every country.</p>
 
   <div class="bar">
     <button id="play" class="primary" type="button" aria-label="Play or pause the timeline">Play</button>
@@ -126,15 +108,6 @@ path.c.sel { stroke: var(--sel); stroke-width: 1.6; }
       <input id="slider" type="range" min="0" value="0" step="1" aria-label="Period">
       <div class="ticks" id="ticks"></div>
     </div>
-    <label>Arrivals to Poland
-      <select id="measure" aria-label="Measure for arrivals to Poland">
-        <option value="stock" selected>UN stock growth (includes refugees)</option>
-        <option value="pm">First residence permits, all (2010 on)</option>
-        <option value="pm12">First residence permits, 12 months or longer (2010 on)</option>
-        <option value="tp">Temporary protection, people registered at end of 2024</option>
-        <option value="pmtp">All permits + temporary protection (2010 on)</option>
-      </select>
-    </label>
   </div>
 
   <div class="main">
@@ -155,23 +128,9 @@ path.c.sel { stroke: var(--sel); stroke-width: 1.6; }
 
   <section class="prov" id="prov" aria-labelledby="ph">
     <h2 id="ph">Sources and methods by country</h2>
-    <p class="sub" style="margin:0">For the country chosen here (or clicked on the map), one row per period: the figures drawn, where they come from, how they were derived and how far to trust them. Neighbouring periods that share a source and method are merged, and a reason is given for every low confidence. The to-Poland rows follow the "Arrivals to Poland" choice above the map. Flows of 1,000 people or fewer are listed but not drawn.</p>
+    <p class="sub" style="margin:0">For the country chosen here (or clicked on the map), one row per period: the figures drawn, where they come from, how they were derived and how far to trust them. Neighbouring periods that share a source and method are merged, and a reason is given for every low confidence. Flows of 1,000 people or fewer are listed but not drawn.</p>
     <div class="yctl"><label>Country <select id="pcountry" aria-label="Country for the sources table"></select></label></div>
     <div class="twrap"><table class="ptable" id="ptable"></table></div>
-  </section>
-
-  <section class="yearly" id="yearly" aria-labelledby="yh">
-    <h2 id="yh">Poland's own yearly figures</h2>
-    <p class="sub" style="margin:0">Three official series from Statistics Poland and the immigration authorities, as published by Eurostat. They measure different things and are never added together in the chart. Permits (2010 on) and temporary protection (2022 on, drawn as dots) can also be drawn on the map as the arrivals measure with the selector above the map.</p>
-    <div class="yctl">
-      <label>Year <select id="yyear" aria-label="Year"></select></label>
-      <label>Permit validity <select id="ydur" aria-label="Permit validity"></select></label>
-      <span class="ykey"><i style="background:var(--in)"></i>official immigration total<i style="background:var(--out)"></i>first residence permits issued<i style="background:var(--text);border-radius:50%"></i>people under temporary protection, end of December (a stock)</span>
-    </div>
-    <div class="ygrid">
-      <div><svg id="ychart" class="ychart" viewBox="0 0 760 250" role="img" aria-label="Yearly immigration to Poland: official totals and first residence permits"></svg></div>
-      <div id="ydetail"></div>
-    </div>
   </section>
 
   <div class="about">
@@ -179,7 +138,7 @@ path.c.sel { stroke: var(--sel); stroke-width: 1.6; }
       <h3>How to read it</h3>
       <ul>
         <li>The number of lines in a bundle grows with the square root of the number of people, on one scale for every period, so small flows still show; the key on the map shows reference bundles. Dashed lines are hand-curated estimates. The numbers in the side panel are exact.</li>
-        <li>"Arrivals to Poland" chooses what the teal lines show from 2010: growth in the UN count of foreign-born residents (default), or first residence permits issued to non-EU citizens. Permits are summed over the years of each period (2020–2024 covers five calendar years) and are not arrivals. The temporary-protection options use the number of people registered under it in Poland at the end of December 2024 (almost all Ukrainians), which is a stock, not arrivals; the last option adds it to all permits and can count a person twice. They largely leave out refugees: Ukrainian permits fall in 2022 while about a million Ukrainians arrived, which suggests those arrivals are not counted in them. EU citizens need no permit either. Departures from Poland use official immigration counts into the receiving country where they exist (European countries, mainly 1998–2024; these are gross counts and larger than net stock growth) and otherwise the stock measure with assumed deaths added.</li>
+        <li>Teal lines (to Poland) show growth in the UN count of foreign-born residents, which includes refugees, where no better count is available. Departures from Poland use official immigration counts into the receiving country where they exist (European countries, mainly 1998–2024; these are gross counts and larger than net stock growth) and otherwise the stock measure with assumed deaths added.</li>
         <li>Click a country (or a name in the list) to see its flows in every period. Scroll or use the buttons to zoom, drag to pan. Escape clears the selection, the arrow keys step through periods.</li>
         <li>1945–1989: hand-curated estimates, rounded, each with a source and confidence in the sources table below the map. Only flows I could attach a figure to are shown, so many real movements are missing.</li>
         <li>1990–2024: growth in the number of foreign-born people in Poland (to Poland) and of Poland-born people abroad (from Poland) between UN reference years. Falling stocks are shown as zero.</li>
@@ -192,7 +151,7 @@ path.c.sel { stroke: var(--sel); stroke-width: 1.6; }
         <li>Stocks count people by country of birth, so ethnic Germans born in Poland, or Poles born in the former eastern territories, appear as migrants.</li>
         <li>Internal resettlement such as Operation Vistula (1947) is not migration to or from Poland and is left out. So is movement between countries other than Poland.</li>
         <li>The last period, 2020–2024, is four years long and includes the arrival of Ukrainians after February 2022.</li>
-        <li>Only flows above 100 people are drawn for migration counts and estimates, and above 1,000 for permits and temporary protection, and for the stock measure only the 30 largest partners per direction.</li>
+        <li>Only flows above 100 people are drawn, and for the stock measure only the 30 largest partners per direction.</li>
         <li>Before 1990 the map draws eastern Europe with the borders of the time: the Soviet Union, Czechoslovakia and Yugoslavia as single states, and East and West Germany apart. They are selected, listed and counted separately from Russia, Czechia, Slovakia, Serbia and the other successor states, whose figures start in 1990. Yugoslavia has no figures yet. The inner German border is hand-placed on a coarse outline, so it is approximate. Other borders that changed (for example Austria's occupation zones) are not shown.</li>
       </ul>
     </section>
@@ -205,7 +164,6 @@ path.c.sel { stroke: var(--sel); stroke-width: 1.6; }
         <li>United States: DHS Yearbook of Immigration Statistics (tables 2 and 3, 2010, 2020 and 2023 editions). Canada, New Zealand, the UK and Ireland from 1990: modelled from UN stocks plus assumed deaths (see the sources table).</li>
         <li>Australia: 1945–54 and 1955–2004 are modelled from census and UN Poland-born counts (see the sources table); from 2005 the ABS <em>Overseas Migration 2022-23</em> tables 2.1, 3.1 and 1.1 (arrivals, departures and net overseas migration of Poland-born people), financial years to 2022–23.</li>
         <li>1945–1989, other countries: figures rounded from the literature named in the panel (population transfer studies, German Aussiedler statistics, US immigration yearbooks), not independently re-checked here.</li>
-        <li>Yearly panel and arrival options: Eurostat tables <em>migr_imm5prv</em> (immigration by country of previous residence; Poland's data from Statistics Poland), <em>migr_resfirst</em> (first residence permits by citizenship) and <em>migr_asytpsm</em> (beneficiaries of temporary protection at the end of the month), reuse permitted with attribution.</li>
         <li>Map: Natural Earth 110m countries, public domain, simplified and drawn in the Natural Earth projection.</li>
       </ul>
     </section>
@@ -247,17 +205,12 @@ MAP.countries.forEach((c) => (byId[c.id] = c));
 const POL = byId.POL;
 const rowsByPeriod = Array.from({ length: N }, () => []);
 FLOWS.flows.forEach((f) => rowsByPeriod[f.p].push(f));
-// people moving to ('in') or from ('out') Poland for one row, under the chosen measure
+// people moving to ('in') or from ('out') Poland for one row
 function val(f, dir) {
-  if (dir === "out") return f.out;
-  const P = FLOWS.periods[f.p];
-  if (S.measure === "tp") return P.tp ? f.tp || 0 : f.in;
-  if (S.measure === "stock" || !P.permits) return f.in;
-  if (S.measure === "pmtp") return (f.pm || 0) + (P.tp ? f.tp || 0 : 0);
-  return (S.measure === "pm12" ? f.pm12 : f.pm) || 0;
+  return dir === "out" ? f.out : f.in;
 }
 const MIN_COUNTED = 100;
-const GMAX = Math.max(1, ...FLOWS.flows.flatMap((f) => [f.in, f.out, f.pm || 0, f.pm12 || 0, (f.pm || 0) + (f.tp || 0)]));
+const GMAX = Math.max(1, ...FLOWS.flows.flatMap((f) => [f.in, f.out]));
 // a flow is drawn as a bundle of thin lines; the count grows with the square root of the people
 const linesFor = (people) => 1 + Math.round(Math.sqrt(people / GMAX) * 24);
 const matches = (sel, iso) => iso === sel;
@@ -268,7 +221,7 @@ const nameOf = (iso) => {
 };
 
 // ---- state ----
-const S = { p: 0, sel: null, playing: false, measure: "stock", sort: { k: "out", d: -1 }, vb: { x: 0, y: Y0, w: W, h: H } };
+const S = { p: 0, sel: null, playing: false, sort: { k: "out", d: -1 }, vb: { x: 0, y: Y0, w: W, h: H } };
 
 // ---- DOM helpers ----
 function h(tag, attrs, ...kids) {
@@ -446,9 +399,7 @@ function buildStreams() {
     if (!a) return;
     ["in", "out"].forEach((dir) => {
       const people = val(f, dir);
-      const P = FLOWS.periods[f.p];
-      const counted = dir === "out" || (!(S.measure === "tp" && P.tp) && (S.measure === "stock" || !P.permits));
-      if (people <= (counted ? MIN_COUNTED : 1000)) return; // permits and protection need 1,000; migration counts 100
+      if (people <= MIN_COUNTED) return;
       const from = dir === "in" ? a : pa, to = dir === "in" ? pa : a;
       const dx = to[0] - from[0], dy = to[1] - from[1], len = Math.hypot(dx, dy) || 1;
       const off = len * 0.2; // proportional, so short links stay gently curved instead of pointed
@@ -544,19 +495,6 @@ function renderPanel() {
   const rows = rowsByPeriod[S.p];
   const panel = $("panel");
   panel.textContent = "";
-  const usesPm = ["pm", "pm12", "pmtp"].includes(S.measure) && P.permits;
-  const usesTp = ["tp", "pmtp"].includes(S.measure) && P.tp;
-  const alt = usesPm || usesTp;
-  const what = [usesPm ? "first residence permits" : null, usesTp ? "people under temporary protection" : null].filter(Boolean).join(" + ");
-  if (!S.sel && alt) panel.append(h("span", { class: "badge" },
-    `To Poland: ${what} (not arrivals). From Poland: UN stock changes`));
-  if (!S.sel && S.measure !== "stock" && !alt)
-    panel.append(h("div", { class: "ctx" }, `The ${S.measure.startsWith("pm") ? "permit" : "protection"} data do not cover this period; it shows the stock measure.`));
-  if (!S.sel && usesPm)
-    panel.append(h("div", { class: "ctx" }, "Permit counts largely leave out refugees (Ukrainian permits fall in 2022 although about a million Ukrainians arrived) and EU citizens."));
-  if (!S.sel && usesTp)
-    panel.append(h("div", { class: "ctx" }, `Temporary protection is the number of people registered under it at the end of December ${P.tp}, not a count of arrivals.` + (S.measure === "pmtp" ? " Added to permits it can count one person twice (several permits, or a permit and protection)." : "")));
-
   if (S.sel) {
     const a = agg(S.sel)[S.p];
     panel.append(h("h2", {}, nameOf(S.sel)),
@@ -600,15 +538,8 @@ function renderPanel() {
 // ---- sources and methods table ----
 const BASES = FLOWS.bases;
 function inItems(f) {
-  const P = FLOWS.periods[f.p], b = f.b || {}, m = S.measure;
-  if (m === "tp") return [["To Poland", P.tp ? b.tp : b.in]];
-  if (m === "stock" || !P.permits) return [["To Poland", b.in]];
-  if (m === "pmtp") {
-    const a = [["To Poland (permits)", b.pm]];
-    if (P.tp && f.tp) a.push(["To Poland (protection)", b.tp]);
-    return a;
-  }
-  return [["To Poland", m === "pm12" ? b.pm12 : b.pm]];
+  const b = f.b || {};
+  return [["To Poland", b.in]];
 }
 function provRows(sel) {
   const out = [];
@@ -696,77 +627,10 @@ function render() {
   renderProv();
   draw();
 }
-$("measure").addEventListener("change", () => { S.measure = $("measure").value; aggCache = {}; render(); });
 
 readColors(); resize(); applyVB(); widthKey(); initProv();
 render();
 
-// ---- yearly panel (Poland's own figures) ----
-const YEARLY = /*YEARLY*/null;
-(function () {
-  const Y = YEARLY, svgY = $("ychart"), selY = $("yyear"), selD = $("ydur"), det = $("ydetail");
-  const years = [];
-  for (let y = 1998; y <= 2025; y++) years.push(String(y));
-  const st = { year: "2024", dur: "TOTAL" };
-  years.slice().reverse().forEach((y) => selY.append(h("option", { value: y }, y)));
-  Object.entries(Y.durations).forEach(([k, v]) => selD.append(h("option", { value: k }, k === "TOTAL" ? "All permits" : v)));
-  selY.value = st.year;
-  const permitTotal = (y, d) => (Y.permits[y] && Y.permits[y][d] ? Y.permits[y][d].total : null);
-  function chart() {
-    svgY.textContent = "";
-    const L = 58, R = 6, T = 10, B = 28, w = 760 - L - R, ht = 250 - T - B, slot = w / years.length;
-    const tpTotal = (y) => (Y.tp[y] ? Y.tp[y].total : null);
-    const vals = years.flatMap((y) => [Y.totals[y] || 0, permitTotal(y, st.dur) || 0, tpTotal(y) || 0]);
-    const max = Math.max(...vals), step = Math.pow(10, Math.floor(Math.log10(max))), top = Math.ceil(max / step) * step;
-    const sc = (v) => (v / top) * ht;
-    const el = (t, a, txt) => { const e = document.createElementNS(NS, t); for (const k in a) e.setAttribute(k, a[k]); if (txt != null) e.textContent = txt; svgY.append(e); return e; };
-    for (let i = 0; i <= 4; i++) {
-      const v = (top / 4) * i, yy = T + ht - sc(v);
-      el("line", { x1: L, x2: L + w, y1: yy, y2: yy, stroke: "currentColor", "stroke-opacity": ".12" });
-      el("text", { x: L - 4, y: yy + 3, "text-anchor": "end" }, fmt.format(v));
-    }
-    years.forEach((y, i) => {
-      const x0 = L + i * slot, bw = slot * 0.4;
-      if (y === st.year) el("rect", { class: "cur", x: x0, y: T, width: slot, height: ht });
-      const a = Y.totals[y], p = permitTotal(y, st.dur);
-      if (a) el("rect", { class: "b-tot", x: x0 + slot * 0.08, y: T + ht - sc(a), width: bw, height: sc(a) }).append(Object.assign(document.createElementNS(NS, "title"), { textContent: `${y}: ${fmt.format(a)} immigrants (official total)` }));
-      if (p) el("rect", { class: "b-per", x: x0 + slot * 0.52, y: T + ht - sc(p), width: bw, height: sc(p) }).append(Object.assign(document.createElementNS(NS, "title"), { textContent: `${y}: ${fmt.format(p)} first residence permits` }));
-      const tv = tpTotal(y);
-      if (tv) el("circle", { cx: x0 + slot / 2, cy: T + ht - sc(tv), r: 3.5, fill: "currentColor" }).append(Object.assign(document.createElementNS(NS, "title"), { textContent: `${y}: ${fmt.format(tv)} people under temporary protection at the end of December` }));
-      if (i % 2 === 0 || y === "2025") el("text", { x: x0 + slot / 2, y: 250 - 10, "text-anchor": "middle" }, y);
-      const hit = el("rect", { class: "hit", x: x0, y: T, width: slot, height: ht, tabindex: "-1" });
-      hit.addEventListener("click", () => { st.year = y; selY.value = y; render2(); });
-    });
-    const bx = L + years.indexOf("2009") * slot;
-    el("line", { class: "brk", x1: bx, x2: bx, y1: T, y2: T + ht });
-    el("text", { x: bx + 3, y: T + 9 }, "series jump 2008 to 2009");
-  }
-  function list(title, rowsObj, total) {
-    const rows = Object.entries(rowsObj).sort((a, b) => b[1] - a[1]).slice(0, 12);
-    return [h("div", { class: "yh" }, title),
-      h("ul", { class: "ylist" }, rows.map(([c, v]) => h("li", {}, h("span", {}, Y.names[c] || c),
-        h("span", {}, fmt.format(v) + (total ? ` · ${Math.round((v / total) * 100)}%` : "")))))];
-  }
-  function detail() {
-    det.textContent = "";
-    const y = st.year, a = Y.totals[y], p = Y.permits[y] && Y.permits[y][st.dur];
-    det.append(h("div", { class: "yh", style: "margin-top:0" }, y));
-    const tpy = Y.tp[y];
-    det.append(h("p", { class: "ctx", style: "margin:2px 0 6px" },
-      a ? `Immigrants (official total): ${fmt.format(a)}.` : "No official immigration total in this release for this year.",
-      " ", p ? `First residence permits (${st.dur === "TOTAL" ? "all" : Y.durations[st.dur].toLowerCase()}): ${fmt.format(p.total)}.` : "No permit data for this year.",
-      tpy ? ` People under temporary protection at the end of December: ${fmt.format(tpy.total)}.` : ""));
-    if (Y.prev[y]) det.append(...list("Country of previous residence (permanent-residence immigrants, official split)", Y.prev[y], a));
-    else if (a) det.append(h("p", { class: "ctx" }, "Poland publishes no country split of immigrants for this year."));
-    if (p) det.append(...list("Permits by citizenship", p.by, p.total));
-    if (tpy) det.append(...list("Temporary protection by citizenship (December)", tpy.by, tpy.total));
-    det.append(h("p", { class: "ctx" }, "Permits are not arrivals: one person can receive several, and permits valid for under a year (seasonal and short-term work) make up most of them in most years; pick \"12 months or over\" for longer stays. Citizens of EU countries do not need them. Refugees from Ukraine appear to be counted in the temporary-protection series rather than in the permits."));
-  }
-  function render2() { chart(); detail(); }
-  selY.addEventListener("change", () => { st.year = selY.value; render2(); });
-  selD.addEventListener("change", () => { st.dur = selD.value; render2(); });
-  render2();
-})();
 window.__poland = { S, N, FLOWS, streams: () => streams, setPeriod, setSel };
 </script>
 </body>
