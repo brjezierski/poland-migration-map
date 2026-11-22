@@ -1,0 +1,28 @@
+{
+ "about": "Eurostat table migr_emi3nxt (emigration by country of next usual residence), Spain to Poland, 2002-2024 (2003 is not published), all ages and sexes, as reported by Spain's INE from municipal registers (deregistrations abroad, all citizenships). Immigration from Poland is not in this file: it stays the Eurostat migr_imm5prv series.",
+ "immigration": {},
+ "emigration": {
+  "2002": 99,
+  "2004": 219,
+  "2005": 314,
+  "2006": 525,
+  "2007": 1087,
+  "2008": 5331,
+  "2009": 7063,
+  "2010": 6690,
+  "2011": 4917,
+  "2012": 5472,
+  "2013": 5179,
+  "2014": 4369,
+  "2015": 3386,
+  "2016": 3196,
+  "2017": 4479,
+  "2018": 2795,
+  "2019": 3170,
+  "2020": 2001,
+  "2021": 5679,
+  "2022": 4891,
+  "2023": 4861,
+  "2024": 5177
+ }
+}

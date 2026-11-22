@@ -1,0 +1,26 @@
+{
+ "about": "Eurostat table migr_emi3nxt (emigration by country of next usual residence), Belgium to Poland, 2010-2024, all ages and sexes, as reported by Belgium's National Register via Statbel. 2021 is missing in Eurostat and is the average of 2020 and 2022. Belgium has no published series by country before 2010. Immigration from Poland is not in this file: it stays the Eurostat migr_imm5prv series.",
+ "interpolated": {
+  "emigration": [
+   "2021"
+  ]
+ },
+ "immigration": {},
+ "emigration": {
+  "2010": 2434,
+  "2011": 2220,
+  "2012": 2412,
+  "2013": 3004,
+  "2014": 2801,
+  "2015": 2884,
+  "2016": 3519,
+  "2017": 3689,
+  "2018": 3926,
+  "2019": 4595,
+  "2020": 3987,
+  "2021": 3685,
+  "2022": 3383,
+  "2023": 3454,
+  "2024": 3944
+ }
+}

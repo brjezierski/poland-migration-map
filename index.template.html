@@ -1,0 +1,773 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Poland migration flows</title>
+<style>
+:root {
+  --bg: #f6f4ef; --card: #ffffff; --border: #d9d4c8; --text: #1d2125; --muted: #5d646b;
+  --sea: #e8eef2; --land: #cfd3c9; --land-line: #f6f4ef; --hot: #b9c4b4; --pl: #c0392b; --sel: #1d2125;
+  --in: #0f8f80; --out: #d65a0a; --halo: rgba(246,244,239,.9); --accent: #1d2125;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0f1419; --card: #171d24; --border: #2b343e; --text: #e8ebee; --muted: #9aa4ae;
+    --sea: #0b1015; --land: #27313a; --land-line: #0f1419; --hot: #35444f; --pl: #ef5b4a; --sel: #ffffff;
+    --in: #3ddbc4; --out: #ff9a4d; --halo: rgba(11,16,21,.9); --accent: #e8ebee;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+.wrap { max-width: 1280px; margin: 0 auto; padding: 20px 16px 40px; }
+h1 { margin: 0 0 4px; font-size: 1.5rem; }
+.sub { margin: 0 0 16px; color: var(--muted); max-width: 70ch; }
+.bar { display: flex; flex-wrap: wrap; gap: 12px 16px; align-items: center; background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; margin-bottom: 14px; }
+button, select { font: inherit; color: var(--text); background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 6px 12px; cursor: pointer; }
+button:hover, select:hover { border-color: var(--muted); }
+button:focus-visible, select:focus-visible, input:focus-visible, svg:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button.primary { background: var(--accent); color: var(--bg); border-color: var(--accent); min-width: 5.5em; }
+.timeline { flex: 1 1 560px; min-width: 260px; }
+.bar label { display: flex; gap: 8px; align-items: center; }
+#measure { max-width: 420px; }
+.timeline input[type=range] { width: 100%; accent-color: var(--accent); }
+.ticks { display: flex; justify-content: space-between; font-size: .72rem; color: var(--muted); margin-top: 2px; }
+.ticks span { flex: 1; text-align: center; cursor: pointer; }
+.ticks span.on { color: var(--text); font-weight: 700; }
+.period { font-size: 1.35rem; font-weight: 700; min-width: 5.6em; font-variant-numeric: tabular-nums; }
+.main { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 14px; align-items: start; }
+.stage { position: relative; background: var(--sea); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; aspect-ratio: __ASPECT__; }
+.stage svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: grab; }
+.stage svg.zoomed { touch-action: none; }
+.stage svg.drag { cursor: grabbing; }
+.stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+path.c { fill: var(--land); stroke: var(--land-line); stroke-width: .4; vector-effect: non-scaling-stroke; }
+path.c.hot { fill: var(--hot); }
+path.c.off { display: none; }
+path.c.pl { fill: var(--pl); }
+path.c.sel { stroke: var(--sel); stroke-width: 1.6; }
+.zoom { position: absolute; right: 8px; top: 8px; display: flex; flex-direction: column; gap: 4px; }
+.zoom button { width: 32px; height: 32px; padding: 0; font-size: 1.1rem; line-height: 1; }
+.tip { position: absolute; pointer-events: none; background: var(--card); border: 1px solid var(--border); border-radius: 6px; padding: 4px 8px; font-size: .8rem; display: none; white-space: nowrap; z-index: 2; }
+.legend { position: absolute; left: 8px; bottom: 8px; background: color-mix(in srgb, var(--card) 88%, transparent); border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; font-size: .78rem; }
+.legend i { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 5px; vertical-align: baseline; }
+.panel { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 14px; }
+.panel h2 { margin: 0 0 4px; font-size: 1.15rem; }
+.badge { display: inline-block; font-size: .74rem; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--border); color: var(--muted); margin-bottom: 8px; }
+.badge.est { border-style: dashed; color: var(--out); }
+.ctx { color: var(--muted); font-size: .88rem; margin: 6px 0 10px; }
+.tot { display: flex; gap: 14px; margin: 8px 0; font-variant-numeric: tabular-nums; }
+.tot div { flex: 1; }
+.tot b { display: block; font-size: 1.25rem; }
+.in-c { color: var(--in); } .out-c { color: var(--out); }
+.list { list-style: none; margin: 8px 0 0; padding: 0; }
+.list li button { display: grid; grid-template-columns: 1fr auto auto auto; gap: 6px; width: 100%; text-align: left; border: 0; border-bottom: 1px solid var(--border); border-radius: 0; background: none; padding: 5px 2px; font-size: .86rem; font-variant-numeric: tabular-nums; }
+.list li button span.n { min-width: 4.2em; text-align: right; }
+.cols { display: grid; grid-template-columns: 1fr auto auto auto; gap: 6px; font-size: .72rem; color: var(--muted); padding: 0 2px; margin-top: 6px; }
+.cols .sortbtn { min-width: 4.2em; background: none; border: 0; padding: 0; font: inherit; color: inherit; cursor: pointer; }
+.cols .sortbtn:hover, .cols .sortbtn.on { color: var(--text); font-weight: 600; }
+.notes { font-size: .8rem; color: var(--muted); margin: 8px 0 0; padding-left: 16px; }
+.spark { width: 100%; height: auto; margin: 6px 0; }
+.spark .l-in { stroke: var(--in); } .spark .l-out { stroke: var(--out); }
+.spark text { fill: var(--muted); font-size: 9px; }
+.spark .cur { stroke: var(--muted); stroke-dasharray: 2 2; }
+.link { background: none; border: 0; padding: 0; color: var(--muted); text-decoration: underline; font-size: .82rem; }
+.about { margin-top: 18px; display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; }
+.about section { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; font-size: .86rem; }
+.about h3 { margin: 0 0 6px; font-size: .95rem; }
+.about ul { margin: 0; padding-left: 18px; }
+.about a { color: inherit; }
+.yearly { margin-top: 18px; background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 14px; }
+.yearly h2 { margin: 0 0 4px; font-size: 1.15rem; }
+.yctl { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; margin: 10px 0; }
+.ygrid { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+.ychart { width: 100%; height: auto; display: block; }
+.ychart text { fill: var(--muted); font-size: 9px; }
+.ychart .b-tot { fill: var(--in); } .ychart .b-per { fill: var(--out); }
+.ychart .hit { fill: transparent; cursor: pointer; }
+.ychart .hit:hover { fill: color-mix(in srgb, var(--text) 8%, transparent); }
+.ychart .cur { fill: color-mix(in srgb, var(--text) 12%, transparent); }
+.ychart .brk { stroke: var(--muted); stroke-dasharray: 3 3; }
+.ykey i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin: 0 5px 0 12px; vertical-align: baseline; }
+.ykey i:first-child { margin-left: 0; }
+.ylist { list-style: none; padding: 0; margin: 4px 0 10px; font-size: .86rem; font-variant-numeric: tabular-nums; }
+.ylist li { display: flex; justify-content: space-between; border-bottom: 1px solid var(--border); padding: 3px 2px; }
+.ylist li span:last-child { color: var(--muted); }
+.yh { font-size: .9rem; margin: 10px 0 2px; font-weight: 700; }
+@media (max-width: 900px) { .ygrid { grid-template-columns: minmax(0, 1fr); } }
+.prov { margin-top: 18px; background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 14px; }
+.prov h2 { margin: 0 0 4px; font-size: 1.15rem; }
+.twrap { overflow-x: auto; margin-top: 8px; }
+.ptable { border-collapse: collapse; width: 100%; min-width: 860px; font-size: .84rem; }
+.ptable th, .ptable td { border: 1px solid var(--border); padding: 6px 8px; vertical-align: top; text-align: left; }
+.ptable thead th { background: color-mix(in srgb, var(--text) 6%, transparent); position: sticky; top: 0; }
+.ptable td.num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.ptable .lbl { font-weight: 700; display: block; }
+.ptable .blk + .blk { margin-top: 6px; }
+.ptable .srclink { font-size: .78rem; white-space: nowrap; }
+.cf { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: .74rem; font-weight: 700; border: 1px solid var(--border); }
+.cf.low { color: var(--out); border-color: var(--out); } .cf.medium { color: var(--muted); } .cf.high { color: var(--in); border-color: var(--in); }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+@media (max-width: 900px) {
+  .main { grid-template-columns: minmax(0, 1fr); }
+  .ticks span:nth-child(even) { visibility: hidden; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Migration to and from Poland, 1945 to 2024</h1>
+  <p class="sub">Each line links Poland to another country for a five-year period; it is drawn as a bundle of thin lines, and the more people moved the more lines it has. Teal lines run to Poland, orange lines out of it. Before 1990 the figures are rough hand-made estimates. After that, departures use official arrival counts where they exist (most of Europe, the US and Australia) and otherwise estimates from UN migrant-stock changes plus assumed deaths; the sources table below the map says which for every country. For arrivals to Poland from 2010 you can switch to Poland's own residence-permit data.</p>
+
+  <div class="bar">
+    <button id="play" class="primary" type="button" aria-label="Play or pause the timeline">Play</button>
+    <div class="period" id="period" aria-live="polite">1945–1950</div>
+    <div class="timeline">
+      <input id="slider" type="range" min="0" value="0" step="1" aria-label="Period">
+      <div class="ticks" id="ticks"></div>
+    </div>
+    <label>Arrivals to Poland
+      <select id="measure" aria-label="Measure for arrivals to Poland">
+        <option value="stock" selected>UN stock growth (includes refugees)</option>
+        <option value="pm">First residence permits, all (2010 on)</option>
+        <option value="pm12">First residence permits, 12 months or longer (2010 on)</option>
+        <option value="tp">Temporary protection, people registered at end of 2024</option>
+        <option value="pmtp">All permits + temporary protection (2010 on)</option>
+      </select>
+    </label>
+  </div>
+
+  <div class="main">
+    <div class="stage" id="stage">
+      <svg id="map" role="img" aria-label="World map with migration flows to and from Poland" tabindex="0"><g id="shapes"></g></svg>
+      <canvas id="dots"></canvas>
+      <div class="zoom">
+        <button type="button" id="zin" aria-label="Zoom in">+</button>
+        <button type="button" id="zout" aria-label="Zoom out">−</button>
+        <button type="button" id="zreset" aria-label="Reset view to the whole world">⌂</button>
+        <button type="button" id="zeu" aria-label="Zoom to Europe" style="font-size:.7rem">EU</button>
+      </div>
+      <div class="tip" id="tip"></div>
+      <div class="legend"><i style="background:var(--in)"></i>to Poland <i style="background:var(--out);margin-left:10px"></i>from Poland<div id="wkey" style="margin-top:4px"></div></div>
+    </div>
+    <aside class="panel" id="panel"></aside>
+  </div>
+
+  <section class="prov" id="prov" aria-labelledby="ph">
+    <h2 id="ph">Sources and methods by country</h2>
+    <p class="sub" style="margin:0">For the country chosen here (or clicked on the map), one row per period: the figures drawn, where they come from, how they were derived and how far to trust them. Neighbouring periods that share a source and method are merged, and a reason is given for every low confidence. The to-Poland rows follow the "Arrivals to Poland" choice above the map. Flows of 1,000 people or fewer are listed but not drawn.</p>
+    <div class="yctl"><label>Country <select id="pcountry" aria-label="Country for the sources table"></select></label></div>
+    <div class="twrap"><table class="ptable" id="ptable"></table></div>
+  </section>
+
+  <section class="yearly" id="yearly" aria-labelledby="yh">
+    <h2 id="yh">Poland's own yearly figures</h2>
+    <p class="sub" style="margin:0">Three official series from Statistics Poland and the immigration authorities, as published by Eurostat. They measure different things and are never added together in the chart. Permits (2010 on) and temporary protection (2022 on, drawn as dots) can also be drawn on the map as the arrivals measure with the selector above the map.</p>
+    <div class="yctl">
+      <label>Year <select id="yyear" aria-label="Year"></select></label>
+      <label>Permit validity <select id="ydur" aria-label="Permit validity"></select></label>
+      <span class="ykey"><i style="background:var(--in)"></i>official immigration total<i style="background:var(--out)"></i>first residence permits issued<i style="background:var(--text);border-radius:50%"></i>people under temporary protection, end of December (a stock)</span>
+    </div>
+    <div class="ygrid">
+      <div><svg id="ychart" class="ychart" viewBox="0 0 760 250" role="img" aria-label="Yearly immigration to Poland: official totals and first residence permits"></svg></div>
+      <div id="ydetail"></div>
+    </div>
+  </section>
+
+  <div class="about">
+    <section>
+      <h3>How to read it</h3>
+      <ul>
+        <li>The number of lines in a bundle grows with the square root of the number of people, on one scale for every period, so small flows still show; the key on the map shows reference bundles. Dashed lines are hand-curated estimates. The numbers in the side panel are exact.</li>
+        <li>"Arrivals to Poland" chooses what the teal lines show from 2010: growth in the UN count of foreign-born residents (default), or first residence permits issued to non-EU citizens. Permits are summed over the years of each period (2020–2024 covers five calendar years) and are not arrivals. The temporary-protection options use the number of people registered under it in Poland at the end of December 2024 (almost all Ukrainians), which is a stock, not arrivals; the last option adds it to all permits and can count a person twice. They largely leave out refugees: Ukrainian permits fall in 2022 while about a million Ukrainians arrived, which suggests those arrivals are not counted in them. EU citizens need no permit either. Departures from Poland use official immigration counts into the receiving country where they exist (European countries, mainly 1998–2024; these are gross counts and larger than net stock growth) and otherwise the stock measure with assumed deaths added.</li>
+        <li>Click a country (or a name in the list) to see its flows in every period. Scroll or use the buttons to zoom, drag to pan. Escape clears the selection, the arrow keys step through periods.</li>
+        <li>1945–1989: hand-curated estimates, rounded, each with a source and confidence in the sources table below the map. Only flows I could attach a figure to are shown, so many real movements are missing.</li>
+        <li>1990–2024: growth in the number of foreign-born people in Poland (to Poland) and of Poland-born people abroad (from Poland) between UN reference years. Falling stocks are shown as zero.</li>
+      </ul>
+    </section>
+    <section>
+      <h3>Limits</h3>
+      <ul>
+        <li>For countries without official counts these are net changes in stocks plus assumed deaths, not counts of moves. Deaths, returns, naturalisation and revised estimates hide gross flows, so inflows in particular are understated until the 2020s.</li>
+        <li>Stocks count people by country of birth, so ethnic Germans born in Poland, or Poles born in the former eastern territories, appear as migrants.</li>
+        <li>Internal resettlement such as Operation Vistula (1947) is not migration to or from Poland and is left out. So is movement between countries other than Poland.</li>
+        <li>The last period, 2020–2024, is four years long and includes the arrival of Ukrainians after February 2022.</li>
+        <li>Only flows above 100 people are drawn for migration counts and estimates, and above 1,000 for permits and temporary protection, and for the stock measure only the 30 largest partners per direction.</li>
+        <li>Before 1990 the map draws eastern Europe with the borders of the time: the Soviet Union, Czechoslovakia and Yugoslavia as single states, and East and West Germany apart. They are selected, listed and counted separately from Russia, Czechia, Slovakia, Serbia and the other successor states, whose figures start in 1990. Yugoslavia has no figures yet. The inner German border is hand-placed on a coarse outline, so it is approximate. Other borders that changed (for example Austria's occupation zones) are not shown.</li>
+      </ul>
+    </section>
+    <section>
+      <h3>Sources and licences</h3>
+      <ul>
+        <li>1990–2024: UN DESA, <em>International Migrant Stock 2024</em>, Table 1 (origin and destination, both sexes), POP/DB/MIG/Stock/Rev.2, CC BY 3.0 IGO.</li>
+        <li>1945–1989, Israel: Central Bureau of Statistics (Israel), <em>Statistical Abstract of Israel 2010</em>, Table 4.4, immigrants by period of immigration and country of birth, split evenly by year across the five-year periods.</li>
+        <li>Europe, from 1998: Eurostat <em>migr_imm5prv</em>, immigration with Poland as the country of previous residence (national statistics offices; definitions differ by country). All other countries from 1990: modelled from UN stocks plus assumed deaths.</li>
+        <li>United States: DHS Yearbook of Immigration Statistics (tables 2 and 3, 2010, 2020 and 2023 editions). Canada, New Zealand, the UK and Ireland from 1990: modelled from UN stocks plus assumed deaths (see the sources table).</li>
+        <li>Australia: 1945–54 and 1955–2004 are modelled from census and UN Poland-born counts (see the sources table); from 2005 the ABS <em>Overseas Migration 2022-23</em> tables 2.1, 3.1 and 1.1 (arrivals, departures and net overseas migration of Poland-born people), financial years to 2022–23.</li>
+        <li>1945–1989, other countries: figures rounded from the literature named in the panel (population transfer studies, German Aussiedler statistics, US immigration yearbooks), not independently re-checked here.</li>
+        <li>Yearly panel and arrival options: Eurostat tables <em>migr_imm5prv</em> (immigration by country of previous residence; Poland's data from Statistics Poland), <em>migr_resfirst</em> (first residence permits by citizenship) and <em>migr_asytpsm</em> (beneficiaries of temporary protection at the end of the month), reuse permitted with attribution.</li>
+        <li>Map: Natural Earth 110m countries, public domain, simplified and drawn in the Natural Earth projection.</li>
+      </ul>
+    </section>
+  </div>
+</div>
+
+<script>
+const MAP = /*MAP*/null;
+const FLOWS = /*FLOWS*/null;
+
+const CONTEXT = {
+  1945: "Post-war border changes: Germans leave the new western territories, Poles are repatriated from the lost eastern borderlands, and Ukrainians are resettled to the Soviet Union.",
+  1950: "Closed borders under Stalinism: almost no emigration, only small ethnic-German departures.",
+  1955: "After 1956 the borders open for a while: ethnic Germans and Jews leave, and a second repatriation from the USSR takes place.",
+  1960: "A quiet period with limited emigration, mostly ethnic Germans and family reunification.",
+  1965: "The political and anti-Zionist campaign of 1968 pushes some thousands to leave; German family reunification continues.",
+  1970: "The 1970 Warsaw Treaty with West Germany eases departures of ethnic Germans.",
+  1975: "Détente-era agreements raise departures to West Germany.",
+  1980: "Solidarity and martial law (1981) trigger emigration, only partly captured here.",
+  1985: "Departures to West Germany rise sharply in the late 1980s, ahead of 1989.",
+  1990: "After 1989 the borders open. The UN data show the Polish-born abroad growing, led by the United States and Germany.",
+  1995: "Emigration is steadier; Germany stays the main destination.",
+  2000: "Poland joins the EU on 1 May 2004; the UK, Ireland and Sweden open their labour markets at once.",
+  2005: "The peak of post-accession emigration, above all to the UK, Germany and Ireland.",
+  2010: "Germany opens its labour market in 2011; the UK keeps growing, and arrivals into Poland start to rise.",
+  2015: "Brexit referendum in 2016; labour migration into Poland, largely from Ukraine, keeps growing.",
+  2020: "Pandemic years, then Russia's full-scale invasion of Ukraine (February 2022) brings about a million people born in Ukraine to Poland, as refugees and workers."
+};
+const $ = (id) => document.getElementById(id);
+const fmt = new Intl.NumberFormat("en");
+const num = (v) => (v ? fmt.format(v) : "–"); // a zero means nothing recorded, so it is not shown
+const W = MAP.w, Y0 = MAP.y0, H = MAP.h;
+const N = FLOWS.periods.length;
+
+// ---- data indexes ----
+const shapeOf = (iso) => iso;
+const byId = {};
+MAP.countries.forEach((c) => (byId[c.id] = c));
+const POL = byId.POL;
+const rowsByPeriod = Array.from({ length: N }, () => []);
+FLOWS.flows.forEach((f) => rowsByPeriod[f.p].push(f));
+// people moving to ('in') or from ('out') Poland for one row, under the chosen measure
+function val(f, dir) {
+  if (dir === "out") return f.out;
+  const P = FLOWS.periods[f.p];
+  if (S.measure === "tp") return P.tp ? f.tp || 0 : f.in;
+  if (S.measure === "stock" || !P.permits) return f.in;
+  if (S.measure === "pmtp") return (f.pm || 0) + (P.tp ? f.tp || 0 : 0);
+  return (S.measure === "pm12" ? f.pm12 : f.pm) || 0;
+}
+const MIN_COUNTED = 100;
+const GMAX = Math.max(1, ...FLOWS.flows.flatMap((f) => [f.in, f.out, f.pm || 0, f.pm12 || 0, (f.pm || 0) + (f.tp || 0)]));
+// a flow is drawn as a bundle of thin lines; the count grows with the square root of the people
+const linesFor = (people) => 1 + Math.round(Math.sqrt(people / GMAX) * 24);
+const matches = (sel, iso) => iso === sel;
+const SHORT = { "United Kingdom": "UK", "United States of America": "USA" };
+const nameOf = (iso) => {
+  const n = FLOWS.countries[iso] || (byId[iso] && byId[iso].name) || iso;
+  return SHORT[n] || n;
+};
+
+// ---- state ----
+const S = { p: 0, sel: null, playing: false, measure: "stock", sort: { k: "out", d: -1 }, vb: { x: 0, y: Y0, w: W, h: H } };
+
+// ---- DOM helpers ----
+function h(tag, attrs, ...kids) {
+  const e = document.createElement(tag);
+  for (const k in attrs || {}) {
+    if (k === "class") e.className = attrs[k];
+    else if (k.startsWith("on")) e.addEventListener(k.slice(2), attrs[k]);
+    else e.setAttribute(k, attrs[k]);
+  }
+  kids.flat().forEach((c) => e.append(c));
+  return e;
+}
+const NS = "http://www.w3.org/2000/svg";
+
+// ---- map ----
+const svg = $("map"), shapes = $("shapes"), stage = $("stage");
+const pathEls = {};
+MAP.old.forEach((c) => (byId[c.id] = c));
+// map shapes standing for a country in the periods before 1990 (borders of the time)
+function shapeIds(iso, hist) {
+  if (!hist) return [shapeOf(iso)];
+  return iso === "DEU" ? ["FRG", "DDR"] : [iso]; // the Soviet Union, Czechoslovakia and Yugoslavia are shapes of their own
+}
+const SEL_OF = { DDR: "DEU", FRG: "DEU" };
+const selOf = (id) => SEL_OF[id] || id;
+[...MAP.countries, ...MAP.old].forEach((c) => {
+  const p = document.createElementNS(NS, "path");
+  p.setAttribute("d", c.d);
+  p.setAttribute("class", "c" + (c.id === "POL" ? " pl" : "") + (MAP.old.includes(c) ? " off" : ""));
+  p.dataset.id = c.id;
+  shapes.append(p);
+  pathEls[c.id] = p;
+});
+function applyVB() {
+  const v = S.vb;
+  svg.setAttribute("viewBox", `${v.x} ${v.y} ${v.w} ${v.h}`);
+  svg.classList.toggle("zoomed", v.w < W - 1);
+  if (typeof draw === "function" && cw) draw();
+}
+function clampVB() {
+  const v = S.vb;
+  v.w = Math.min(W, Math.max(W / 10, v.w));
+  v.h = v.w * (H / W);
+  v.x = Math.min(W - v.w, Math.max(0, v.x));
+  v.y = Math.min(Y0 + H - v.h, Math.max(Y0, v.y));
+}
+function zoomAt(f, fx, fy) {
+  const v = S.vb, px = v.x + v.w * fx, py = v.y + v.h * fy;
+  v.w /= f; v.h = v.w * (H / W);
+  v.x = px - v.w * fx; v.y = py - v.h * fy;
+  clampVB(); applyVB();
+}
+svg.addEventListener("wheel", (e) => {
+  e.preventDefault();
+  const r = svg.getBoundingClientRect();
+  zoomAt(e.deltaY < 0 ? 1.25 : 0.8, (e.clientX - r.left) / r.width, (e.clientY - r.top) / r.height);
+}, { passive: false });
+$("zin").onclick = () => zoomAt(1.5, 0.5, 0.5);
+$("zout").onclick = () => zoomAt(1 / 1.5, 0.5, 0.5);
+$("zreset").onclick = () => { S.vb = { x: 0, y: Y0, w: W, h: H }; applyVB(); };
+$("zeu").onclick = () => {
+  const w = 230;
+  S.vb = { x: POL.c[0] - w * 0.55, y: POL.c[1] - w * (H / W) * 0.5, w, h: w * (H / W) };
+  clampVB(); applyVB();
+};
+
+let drag = null;
+svg.addEventListener("pointerdown", (e) => {
+  if (e.button !== 0) return;
+  drag = { x: e.clientX, y: e.clientY, vx: S.vb.x, vy: S.vb.y, moved: false };
+});
+window.addEventListener("pointermove", (e) => {
+  if (!drag) return;
+  const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+  if (!drag.moved && Math.hypot(dx, dy) < 4) return;
+  drag.moved = true; svg.classList.add("drag");
+  const r = svg.getBoundingClientRect();
+  S.vb.x = drag.vx - (dx / r.width) * S.vb.w;
+  S.vb.y = drag.vy - (dy / r.height) * S.vb.h;
+  clampVB(); applyVB();
+});
+window.addEventListener("pointerup", (e) => {
+  if (!drag) return;
+  const was = drag; drag = null; svg.classList.remove("drag");
+  if (was.moved) return;
+  const t = e.target.closest && e.target.closest("path.c");
+  if (t) toggleSel(selOf(t.dataset.id));
+});
+svg.addEventListener("keydown", (e) => {
+  const step = S.vb.w * 0.1;
+  if (e.key === "+" || e.key === "=") zoomAt(1.5, .5, .5);
+  else if (e.key === "-") zoomAt(1 / 1.5, .5, .5);
+  else return;
+  e.preventDefault();
+});
+
+// tooltip
+const tip = $("tip");
+svg.addEventListener("pointermove", (e) => {
+  const t = e.target.closest && e.target.closest("path.c");
+  if (!t || drag) { tip.style.display = "none"; return; }
+  const id = t.dataset.id, a = agg(selOf(id))[S.p];
+  const r = stage.getBoundingClientRect();
+  tip.textContent = (id === "DDR" || id === "FRG" ? `Germany (${byId[id].name})` : nameOf(id)) + (a.in ? ` · to Poland ${fmt.format(a.in)}` : "") + (a.out ? ` · from Poland ${fmt.format(a.out)}` : "");
+  tip.style.display = "block";
+  tip.style.left = Math.min(r.width - tip.offsetWidth - 6, e.clientX - r.left + 12) + "px";
+  tip.style.top = Math.max(4, e.clientY - r.top - 30) + "px";
+});
+svg.addEventListener("pointerleave", () => (tip.style.display = "none"));
+
+// ---- aggregation ----
+let aggCache = {};
+function agg(sel) {
+  if (aggCache[sel]) return aggCache[sel];
+  const out = Array.from({ length: N }, () => ({ in: 0, out: 0 }));
+  FLOWS.flows.forEach((f) => {
+    if (matches(sel, f.c)) { out[f.p].in += val(f, "in"); out[f.p].out += val(f, "out"); }
+  });
+  return (aggCache[sel] = out);
+}
+
+// ---- timeline ----
+const slider = $("slider");
+slider.max = N - 1;
+const ticks = $("ticks");
+FLOWS.periods.forEach((p, i) => {
+  const s = h("span", { "aria-hidden": "true" }, String(p.start));
+  s.onclick = () => setPeriod(i);
+  ticks.append(s);
+});
+slider.addEventListener("input", () => setPeriod(+slider.value));
+function setPeriod(i) { S.p = Math.max(0, Math.min(N - 1, i)); render(); }
+let timer = null;
+function setPlaying(on) {
+  S.playing = on;
+  $("play").textContent = on ? "Pause" : "Play";
+  clearInterval(timer);
+  if (on) timer = setInterval(() => setPeriod((S.p + 1) % N), 3200);
+}
+$("play").onclick = () => setPlaying(!S.playing);
+window.addEventListener("keydown", (e) => {
+  if (e.target.matches("select, input[type=range]")) return;
+  if (e.key === "Escape") setSel(null);
+  else if (e.key === "ArrowRight") setPeriod(S.p + 1);
+  else if (e.key === "ArrowLeft") setPeriod(S.p - 1);
+});
+function toggleSel(id) { setSel(S.sel === id ? null : id); }
+function setSel(id) { S.sel = id; render(); }
+
+// ---- streams and canvas ----
+const cv = $("dots"), ctx = cv.getContext("2d");
+let cw = 0, ch = 0, dpr = 1, streams = [], colors = {}, labelSet = [];
+function readColors() {
+  const cs = getComputedStyle(document.documentElement);
+  ["--in", "--out", "--text", "--halo", "--pl"].forEach((k) => (colors[k] = cs.getPropertyValue(k).trim()));
+}
+function resize() {
+  const r = stage.getBoundingClientRect();
+  dpr = window.devicePixelRatio || 1;
+  cw = r.width; ch = r.height;
+  cv.width = Math.round(cw * dpr); cv.height = Math.round(ch * dpr);
+  draw();
+}
+new ResizeObserver(resize).observe(stage);
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { readColors(); draw(); });
+
+function anchor(iso) { const c = byId[shapeOf(iso)]; return c ? c.c : null; }
+function buildStreams() {
+  const rows = rowsByPeriod[S.p];
+  const est = FLOWS.periods[S.p].method === "curated";
+  const pa = POL.c;
+  streams = [];
+  rows.forEach((f) => {
+    const a = anchor(f.c);
+    if (!a) return;
+    ["in", "out"].forEach((dir) => {
+      const people = val(f, dir);
+      const P = FLOWS.periods[f.p];
+      const counted = dir === "out" || (!(S.measure === "tp" && P.tp) && (S.measure === "stock" || !P.permits));
+      if (people <= (counted ? MIN_COUNTED : 1000)) return; // permits and protection need 1,000; migration counts 100
+      const from = dir === "in" ? a : pa, to = dir === "in" ? pa : a;
+      const dx = to[0] - from[0], dy = to[1] - from[1], len = Math.hypot(dx, dy) || 1;
+      const off = len * 0.2; // proportional, so short links stay gently curved instead of pointed
+      const ctrl = [(from[0] + to[0]) / 2 - (dy / len) * off, (from[1] + to[1]) / 2 + (dx / len) * off];
+      streams.push({ iso: f.c, dir, people, from, to, ctrl, est, k: linesFor(people) });
+    });
+  });
+  streams.sort((x, y) => y.people - x.people); // thin lines end up on top of thick ones
+  streams.reverse();
+  const tops = {};
+  streams.forEach((s) => (tops[s.iso] = (tops[s.iso] || 0) + s.people));
+  labelSet = Object.entries(tops).sort((a, b) => b[1] - a[1]).slice(0, 7).map((e) => e[0]);
+}
+const px = (p) => [(p[0] - S.vb.x) * (cw / S.vb.w), (p[1] - S.vb.y) * (ch / S.vb.h)];
+const bez = (a, c, b, u) => {
+  const m = 1 - u;
+  return [m * m * a[0] + 2 * m * u * c[0] + u * u * b[0], m * m * a[1] + 2 * m * u * c[1] + u * u * b[1]];
+};
+function draw() {
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, cw, ch);
+  streams.forEach((s) => {
+    const live = !S.sel || matches(S.sel, s.iso);
+    const col = s.dir === "in" ? colors["--in"] : colors["--out"];
+    const a = px(s.from), c = px(s.ctrl), b = px(s.to);
+    ctx.globalAlpha = live ? 0.62 : 0.1;
+    ctx.strokeStyle = col;
+    ctx.lineWidth = 1; ctx.lineCap = "butt";
+    ctx.setLineDash([]);
+    // thin lines fan out from the two ends: a quadratic curve's midpoint moves by half its control-point shift
+    const dx = b[0] - a[0], dy = b[1] - a[1], dl = Math.hypot(dx, dy) || 1;
+    const nx = -dy / dl, ny = dx / dl, gap = 1.7;
+    for (let i = 0; i < s.k; i++) {
+      const d = (i - (s.k - 1) / 2) * gap * 2;
+      ctx.beginPath(); ctx.moveTo(a[0], a[1]);
+      ctx.quadraticCurveTo(c[0] + nx * d, c[1] + ny * d, b[0], b[1]);
+      ctx.stroke();
+    }
+  });
+  ctx.globalAlpha = 1; ctx.setLineDash([]);
+  const pp = px(POL.c);
+  ctx.strokeStyle = colors["--pl"]; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(pp[0], pp[1], 5, 0, 6.283); ctx.stroke();
+  ctx.font = "600 11px system-ui, sans-serif"; ctx.textAlign = "center"; ctx.lineJoin = "round";
+  const shown = S.sel ? [S.sel] : labelSet;
+  shown.forEach((iso) => {
+    const a = anchor(iso); if (!a) return;
+    const q = px(a);
+    ctx.lineWidth = 3; ctx.strokeStyle = colors["--halo"]; ctx.fillStyle = colors["--text"];
+    const label = nameOf(iso);
+    ctx.strokeText(label, q[0], q[1] - 7); ctx.fillText(label, q[0], q[1] - 7);
+  });
+}
+function widthKey() {
+  const k = $("wkey"); k.textContent = "";
+  [10000, 100000, 1000000].forEach((n) => {
+    const bundle = h("span", { style: "display:inline-block;width:34px" });
+    for (let i = 0; i < linesFor(n); i++) bundle.append(h("span", { style: "display:block;height:1px;margin:0 0 1px;background:var(--muted)" }));
+    k.append(h("div", { style: "display:flex;align-items:center;gap:6px;margin-top:3px" }, bundle, fmt.format(n)));
+  });
+}
+
+// ---- panel ----
+function spark(sel) {
+  const a = agg(sel), max = Math.max(1, ...a.map((x) => Math.max(x.in, x.out)));
+  const x = (i) => 10 + (i * 260) / (N - 1), y = (v) => 62 - (v / max) * 54;
+  const mk = (cls, key) => {
+    const l = document.createElementNS(NS, "polyline");
+    l.setAttribute("class", cls); l.setAttribute("fill", "none"); l.setAttribute("stroke-width", "2");
+    l.setAttribute("points", a.map((d, i) => `${x(i)},${y(d[key])}`).join(" "));
+    return l;
+  };
+  const s = document.createElementNS(NS, "svg");
+  s.setAttribute("viewBox", "0 0 280 80"); s.setAttribute("class", "spark");
+  s.setAttribute("role", "img");
+  s.setAttribute("aria-label", `Flows between Poland and ${nameOf(sel)} in every period, peak ${fmt.format(max)}`);
+  const cur = document.createElementNS(NS, "line");
+  cur.setAttribute("class", "cur"); cur.setAttribute("x1", x(S.p)); cur.setAttribute("x2", x(S.p));
+  cur.setAttribute("y1", 4); cur.setAttribute("y2", 64);
+  s.append(cur, mk("l-in", "in"), mk("l-out", "out"));
+  [[0, "start"], [N - 1, "end"]].forEach(([i, anch]) => {
+    const t = document.createElementNS(NS, "text");
+    t.setAttribute("x", x(i)); t.setAttribute("y", 76); t.setAttribute("text-anchor", anch);
+    t.textContent = FLOWS.periods[i].start; s.append(t);
+  });
+  const mx = document.createElementNS(NS, "text");
+  mx.setAttribute("x", 10); mx.setAttribute("y", 9); mx.textContent = "peak " + fmt.format(max);
+  s.append(mx);
+  return s;
+}
+function renderPanel() {
+  const P = FLOWS.periods[S.p];
+  const rows = rowsByPeriod[S.p];
+  const panel = $("panel");
+  panel.textContent = "";
+  const usesPm = ["pm", "pm12", "pmtp"].includes(S.measure) && P.permits;
+  const usesTp = ["tp", "pmtp"].includes(S.measure) && P.tp;
+  const alt = usesPm || usesTp;
+  const what = [usesPm ? "first residence permits" : null, usesTp ? "people under temporary protection" : null].filter(Boolean).join(" + ");
+  if (!S.sel && alt) panel.append(h("span", { class: "badge" },
+    `To Poland: ${what} (not arrivals). From Poland: UN stock changes`));
+  if (!S.sel && S.measure !== "stock" && !alt)
+    panel.append(h("div", { class: "ctx" }, `The ${S.measure.startsWith("pm") ? "permit" : "protection"} data do not cover this period; it shows the stock measure.`));
+  if (!S.sel && usesPm)
+    panel.append(h("div", { class: "ctx" }, "Permit counts largely leave out refugees (Ukrainian permits fall in 2022 although about a million Ukrainians arrived) and EU citizens."));
+  if (!S.sel && usesTp)
+    panel.append(h("div", { class: "ctx" }, `Temporary protection is the number of people registered under it at the end of December ${P.tp}, not a count of arrivals.` + (S.measure === "pmtp" ? " Added to permits it can count one person twice (several permits, or a permit and protection)." : "")));
+
+  if (S.sel) {
+    const a = agg(S.sel)[S.p];
+    panel.append(h("h2", {}, nameOf(S.sel)),
+      h("div", { class: "tot" },
+        h("div", {}, h("b", { class: "in-c" }, num(a.in)), "to Poland"),
+        h("div", {}, h("b", { class: "out-c" }, num(a.out)), "from Poland"),
+        h("div", {}, h("b", {}, a.in && a.out ? (a.in - a.out > 0 ? "+" : "") + fmt.format(a.in - a.out) : "–"), "net")),
+      h("div", { class: "ctx" }, `${P.start}–${P.end}. ` + (a.in || a.out ? "" : "No flow recorded for this country in this period.")),
+      spark(S.sel));
+    panel.append(h("button", { class: "link", type: "button", onclick: () => setSel(null) }, "Show all countries"));
+    return;
+  }
+
+  const tin = rows.reduce((s, f) => s + val(f, "in"), 0), tout = rows.reduce((s, f) => s + val(f, "out"), 0);
+  panel.append(h("h2", {}, `${P.start}–${P.end}`),
+    h("div", { class: "ctx" }, CONTEXT[P.start] || ""),
+    h("div", { class: "tot" },
+      h("div", {}, h("b", { class: "in-c" }, num(tin)), "to Poland"),
+      h("div", {}, h("b", { class: "out-c" }, num(tout)), "from Poland")),
+    h("div", { class: "ctx" }, "Totals cover the partners drawn on the map. Net is to Poland minus from Poland, shown only where both have a value."));
+  // Top 10 by the chosen column; with a number column, only partners with a value in it are listed
+  const { k, d } = S.sort;
+  // Net = to Poland minus from Poland, only where both directions have a value (a zero means nothing recorded)
+  const netOf = (f) => (val(f, "in") && val(f, "out") ? val(f, "in") - val(f, "out") : null);
+  const key = { name: (f) => nameOf(f.c), in: (f) => val(f, "in"), out: (f) => val(f, "out"), net: netOf }[k];
+  const list = rows.filter((f) => (k === "name" ? val(f, "in") || val(f, "out") : k === "net" ? key(f) !== null : key(f) > 0))
+    .sort((a, b) => (k === "name" ? key(a).localeCompare(key(b)) : key(a) - key(b)) * d || nameOf(a.c).localeCompare(nameOf(b.c))).slice(0, 10);
+  const head = (id, label, align) => h("button", { type: "button", class: "sortbtn" + (k === id ? " on" : ""), style: `text-align:${align}`,
+    "aria-label": `Sort by ${label}`, onclick: () => { S.sort = { k: id, d: k === id ? -d : id === "name" ? 1 : -1 }; renderPanel(); } },
+    label + (k === id ? (d < 0 ? " ▼" : " ▲") : ""));
+  panel.append(h("div", { class: "cols" }, head("name", "Top countries", "left"), head("in", "to PL", "right"), head("out", "from PL", "right"), head("net", "net", "right")),
+    h("ul", { class: "list" }, list.map((f) =>
+      h("li", {}, h("button", { type: "button", onclick: () => setSel(f.c) },
+        h("span", {}, nameOf(f.c)),
+        h("span", { class: "n in-c" }, val(f, "in") ? fmt.format(val(f, "in")) : "–"),
+        h("span", { class: "n out-c" }, val(f, "out") ? fmt.format(val(f, "out")) : "–"),
+        h("span", { class: "n " + (netOf(f) > 0 ? "in-c" : netOf(f) < 0 ? "out-c" : "") }, netOf(f) === null ? "–" : (netOf(f) > 0 ? "+" : "") + fmt.format(netOf(f))))))));
+  if (!list.length) panel.append(h("div", { class: "ctx" }, "No flows recorded."));
+}
+
+// ---- sources and methods table ----
+const BASES = FLOWS.bases;
+function inItems(f) {
+  const P = FLOWS.periods[f.p], b = f.b || {}, m = S.measure;
+  if (m === "tp") return [["To Poland", P.tp ? b.tp : b.in]];
+  if (m === "stock" || !P.permits) return [["To Poland", b.in]];
+  if (m === "pmtp") {
+    const a = [["To Poland (permits)", b.pm]];
+    if (P.tp && f.tp) a.push(["To Poland (protection)", b.tp]);
+    return a;
+  }
+  return [["To Poland", m === "pm12" ? b.pm12 : b.pm]];
+}
+function provRows(sel) {
+  const out = [];
+  FLOWS.periods.forEach((P, p) => {
+    const rows = rowsByPeriod[p].filter((f) => matches(sel, f.c));
+    let vin = 0, vout = 0;
+    const items = [];
+    rows.forEach((f) => {
+      const a = val(f, "in"), o = val(f, "out");
+      vin += a; vout += o;
+      if (a > 0) inItems(f).forEach((it) => it[1] !== undefined && items.push(it));
+      if (o > 0 && f.b && f.b.out !== undefined) items.push(["From Poland", f.b.out]);
+    });
+    if (!items.length) return;
+    const seen = new Set(), uniq = items.filter((it) => { const k = it[0] + ":" + it[1]; if (seen.has(k)) return false; seen.add(k); return true; });
+    const single = new Set(uniq.map((it) => it[1])).size === 1;
+    const sm = uniq.map((it) => (single ? "" : it[0] + ":") + BASES[it[1]].s + "|" + BASES[it[1]].m).filter((v, i, a) => a.indexOf(v) === i).join("##");
+    const cf = uniq.map((it) => (single ? "" : it[0] + ":") + BASES[it[1]].c + "|" + (BASES[it[1]].w || "")).filter((v, i, a) => a.indexOf(v) === i).join("##");
+    out.push({ P, vin, vout, uniq, single, sm, cf });
+  });
+  return out;
+}
+function spans(keys) { // rowspan for the first row of each run of equal consecutive keys, 0 for the rest
+  const r = keys.map(() => 0);
+  for (let i = 0; i < keys.length; ) {
+    let j = i; while (j + 1 < keys.length && keys[j + 1] === keys[i]) j++;
+    r[i] = j - i + 1; i = j + 1;
+  }
+  return r;
+}
+function cellBlocks(row, field) {
+  const wrap = (it, content) => h("div", { class: "blk" }, row.single ? [] : h("span", { class: "lbl" }, it[0]), content);
+  const shown = row.single ? [row.uniq[0]] : row.uniq;
+  return shown.map((it) => {
+    const b = BASES[it[1]];
+    if (field === "s") return wrap(it, [b.s, " ", ...(b.u || []).map((u, i) => h("a", { class: "srclink", href: u, target: "_blank", rel: "noopener" }, "[" + new URL(u).hostname.replace(/^www\d*\./, "") + "]")).flatMap((a, i) => i ? [" ", a] : [a])]);
+    if (field === "m") return wrap(it, b.m);
+    return wrap(it, [h("span", { class: "cf " + b.c }, b.c[0].toUpperCase() + b.c.slice(1)), b.w ? " " + b.w : ""]);
+  });
+}
+function renderProv() {
+  const tbl = $("ptable"), sel = $("pcountry");
+  const has = [...sel.options].some((o) => o.value === (S.sel || ""));
+  sel.value = has ? S.sel || "" : "";
+  tbl.textContent = "";
+  if (!S.sel) { tbl.append(h("caption", { style: "text-align:left;padding:6px 0;color:var(--muted)" }, "Choose a country above, or click one on the map, to see where its numbers come from.")); return; }
+  const rows = provRows(S.sel);
+  if (!rows.length) { tbl.append(h("caption", { style: "text-align:left;padding:6px 0;color:var(--muted)" }, `No flow for ${nameOf(S.sel)} is recorded in any period under the current choice.`)); return; }
+  const sm = spans(rows.map((r) => r.sm)), cf = spans(rows.map((r) => r.cf));
+  tbl.append(h("thead", {}, h("tr", {}, ["Period", "To Poland", "From Poland", "Source", "Methodology", "Confidence and why"].map((t) => h("th", { scope: "col" }, t)))));
+  tbl.append(h("tbody", {}, rows.map((r, i) => {
+    const tds = [h("th", { scope: "row" }, `${r.P.start}–${r.P.end}`),
+      h("td", { class: "num" }, r.vin ? fmt.format(r.vin) : "–"), h("td", { class: "num" }, r.vout ? fmt.format(r.vout) : "–")];
+    if (sm[i]) { tds.push(h("td", { rowspan: sm[i] }, cellBlocks(r, "s"))); tds.push(h("td", { rowspan: sm[i] }, cellBlocks(r, "m"))); }
+    if (cf[i]) tds.push(h("td", { rowspan: cf[i] }, cellBlocks(r, "c")));
+    return h("tr", {}, tds);
+  })));
+}
+function initProv() {
+  const sel = $("pcountry");
+  const ids = [...new Set(Object.keys(FLOWS.countries))].sort((a, b) => nameOf(a).localeCompare(nameOf(b)));
+  sel.append(h("option", { value: "" }, "Choose a country…"));
+  ids.forEach((id) => sel.append(h("option", { value: id }, nameOf(id))));
+  sel.addEventListener("change", () => setSel(sel.value || null));
+}
+
+// ---- render ----
+function render() {
+  slider.value = S.p;
+  const P = FLOWS.periods[S.p];
+  $("period").textContent = `${P.start}–${P.end}`;
+  [...ticks.children].forEach((t, i) => t.classList.toggle("on", i === S.p));
+  buildStreams();
+  const hist = P.start < 1990;
+  const hot = new Set(streams.flatMap((s) => shapeIds(s.iso, hist)));
+  const sel = new Set(S.sel ? shapeIds(S.sel, hist) : []);
+  const replaced = new Set(hist ? MAP.old.flatMap((o) => o.replaces) : []);
+  const oldIds = new Set(MAP.old.map((o) => o.id));
+  for (const id in pathEls) {
+    pathEls[id].classList.toggle("hot", hot.has(id));
+    pathEls[id].classList.toggle("sel", sel.has(id));
+    pathEls[id].classList.toggle("off", oldIds.has(id) ? !hist : replaced.has(id));
+  }
+  renderPanel();
+  renderProv();
+  draw();
+}
+$("measure").addEventListener("change", () => { S.measure = $("measure").value; aggCache = {}; render(); });
+
+readColors(); resize(); applyVB(); widthKey(); initProv();
+render();
+
+// ---- yearly panel (Poland's own figures) ----
+const YEARLY = /*YEARLY*/null;
+(function () {
+  const Y = YEARLY, svgY = $("ychart"), selY = $("yyear"), selD = $("ydur"), det = $("ydetail");
+  const years = [];
+  for (let y = 1998; y <= 2025; y++) years.push(String(y));
+  const st = { year: "2024", dur: "TOTAL" };
+  years.slice().reverse().forEach((y) => selY.append(h("option", { value: y }, y)));
+  Object.entries(Y.durations).forEach(([k, v]) => selD.append(h("option", { value: k }, k === "TOTAL" ? "All permits" : v)));
+  selY.value = st.year;
+  const permitTotal = (y, d) => (Y.permits[y] && Y.permits[y][d] ? Y.permits[y][d].total : null);
+  function chart() {
+    svgY.textContent = "";
+    const L = 58, R = 6, T = 10, B = 28, w = 760 - L - R, ht = 250 - T - B, slot = w / years.length;
+    const tpTotal = (y) => (Y.tp[y] ? Y.tp[y].total : null);
+    const vals = years.flatMap((y) => [Y.totals[y] || 0, permitTotal(y, st.dur) || 0, tpTotal(y) || 0]);
+    const max = Math.max(...vals), step = Math.pow(10, Math.floor(Math.log10(max))), top = Math.ceil(max / step) * step;
+    const sc = (v) => (v / top) * ht;
+    const el = (t, a, txt) => { const e = document.createElementNS(NS, t); for (const k in a) e.setAttribute(k, a[k]); if (txt != null) e.textContent = txt; svgY.append(e); return e; };
+    for (let i = 0; i <= 4; i++) {
+      const v = (top / 4) * i, yy = T + ht - sc(v);
+      el("line", { x1: L, x2: L + w, y1: yy, y2: yy, stroke: "currentColor", "stroke-opacity": ".12" });
+      el("text", { x: L - 4, y: yy + 3, "text-anchor": "end" }, fmt.format(v));
+    }
+    years.forEach((y, i) => {
+      const x0 = L + i * slot, bw = slot * 0.4;
+      if (y === st.year) el("rect", { class: "cur", x: x0, y: T, width: slot, height: ht });
+      const a = Y.totals[y], p = permitTotal(y, st.dur);
+      if (a) el("rect", { class: "b-tot", x: x0 + slot * 0.08, y: T + ht - sc(a), width: bw, height: sc(a) }).append(Object.assign(document.createElementNS(NS, "title"), { textContent: `${y}: ${fmt.format(a)} immigrants (official total)` }));
+      if (p) el("rect", { class: "b-per", x: x0 + slot * 0.52, y: T + ht - sc(p), width: bw, height: sc(p) }).append(Object.assign(document.createElementNS(NS, "title"), { textContent: `${y}: ${fmt.format(p)} first residence permits` }));
+      const tv = tpTotal(y);
+      if (tv) el("circle", { cx: x0 + slot / 2, cy: T + ht - sc(tv), r: 3.5, fill: "currentColor" }).append(Object.assign(document.createElementNS(NS, "title"), { textContent: `${y}: ${fmt.format(tv)} people under temporary protection at the end of December` }));
+      if (i % 2 === 0 || y === "2025") el("text", { x: x0 + slot / 2, y: 250 - 10, "text-anchor": "middle" }, y);
+      const hit = el("rect", { class: "hit", x: x0, y: T, width: slot, height: ht, tabindex: "-1" });
+      hit.addEventListener("click", () => { st.year = y; selY.value = y; render2(); });
+    });
+    const bx = L + years.indexOf("2009") * slot;
+    el("line", { class: "brk", x1: bx, x2: bx, y1: T, y2: T + ht });
+    el("text", { x: bx + 3, y: T + 9 }, "series jump 2008 to 2009");
+  }
+  function list(title, rowsObj, total) {
+    const rows = Object.entries(rowsObj).sort((a, b) => b[1] - a[1]).slice(0, 12);
+    return [h("div", { class: "yh" }, title),
+      h("ul", { class: "ylist" }, rows.map(([c, v]) => h("li", {}, h("span", {}, Y.names[c] || c),
+        h("span", {}, fmt.format(v) + (total ? ` · ${Math.round((v / total) * 100)}%` : "")))))];
+  }
+  function detail() {
+    det.textContent = "";
+    const y = st.year, a = Y.totals[y], p = Y.permits[y] && Y.permits[y][st.dur];
+    det.append(h("div", { class: "yh", style: "margin-top:0" }, y));
+    const tpy = Y.tp[y];
+    det.append(h("p", { class: "ctx", style: "margin:2px 0 6px" },
+      a ? `Immigrants (official total): ${fmt.format(a)}.` : "No official immigration total in this release for this year.",
+      " ", p ? `First residence permits (${st.dur === "TOTAL" ? "all" : Y.durations[st.dur].toLowerCase()}): ${fmt.format(p.total)}.` : "No permit data for this year.",
+      tpy ? ` People under temporary protection at the end of December: ${fmt.format(tpy.total)}.` : ""));
+    if (Y.prev[y]) det.append(...list("Country of previous residence (permanent-residence immigrants, official split)", Y.prev[y], a));
+    else if (a) det.append(h("p", { class: "ctx" }, "Poland publishes no country split of immigrants for this year."));
+    if (p) det.append(...list("Permits by citizenship", p.by, p.total));
+    if (tpy) det.append(...list("Temporary protection by citizenship (December)", tpy.by, tpy.total));
+    det.append(h("p", { class: "ctx" }, "Permits are not arrivals: one person can receive several, and permits valid for under a year (seasonal and short-term work) make up most of them in most years; pick \"12 months or over\" for longer stays. Citizens of EU countries do not need them. Refugees from Ukraine appear to be counted in the temporary-protection series rather than in the permits."));
+  }
+  function render2() { chart(); detail(); }
+  selY.addEventListener("change", () => { st.year = selY.value; render2(); });
+  selD.addEventListener("change", () => { st.dur = selD.value; render2(); });
+  render2();
+})();
+window.__poland = { S, N, FLOWS, streams: () => streams, setPeriod, setSel };
+</script>
+</body>
+</html>
